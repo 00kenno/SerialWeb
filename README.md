@@ -1,5 +1,6 @@
 # SerialWeb
-キャプティブポータルをデバッグモニターとして用いるためのライブラリです．
+キャプティブポータルをデバッグモニターとして用いるためのライブラリです．<br>
+➔ デモページは[**こちら**](https://torica-org.github.io/SerialWeb/)
 
 ## ライブラリの導入
 1. 上部の`Download ZIP`でZIPファイルをダウンロードしてください．
@@ -14,22 +15,19 @@
 - name: `ESP Async WebServer`
 - author: `ESP32Async`
 
-> [!NOTE]
-> このライブラリはほとんどのマイコンで共通です．
 
 ### TCP通信管理機能を提供するライブラリ
 - ESP32シリーズのマイコンの場合
   - name: `Async TCP`
-  - author: `ESP32Async`
-- ESP8266の場合
-  - name: `ESP Async TCP`
   - author: `ESP32Async`
 - Raspberry Pi Pico WなどのRP系マイコンの場合
   - name: `RPAsyncTCP`
   - author: `Hristo Gochkov,Khoi Hoang,Ayush Sharma`
   
 > [!NOTE]
-> これらのライブラリはマイコンごとに異なります．
+> Raspberry Pi Pico WなどのRP系マイコンの場合，非同期DNSサーバー機能のために以下のライブラリが必要です．
+> - name: `AsyncUDP_RP2040W`
+> - author: `Hristo Gochkov,Khoi Hoang`
 
 ## インスタンス
 インスタンス化は不要です．グローバルインスタンスを提供しています．
