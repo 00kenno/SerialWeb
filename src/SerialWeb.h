@@ -13,7 +13,6 @@
 #include <Arduino.h>
 #include <Print.h>
 
-#include <DNSServer.h>
 #if defined(ESP32) || defined(LIBRETINY)
 #include <AsyncTCP.h>
 #include <WiFi.h>
