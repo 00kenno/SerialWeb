@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "SerialWeb.h"
 
-#include <DNSServer.h>
 #if defined(ESP32) || defined(LIBRETINY)
 #include <AsyncTCP.h>
 #include <WiFi.h>
