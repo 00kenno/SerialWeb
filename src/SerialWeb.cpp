@@ -5,13 +5,13 @@
 #if defined(ESP32) || defined(LIBRETINY)
 #include <AsyncTCP.h>
 #include <WiFi.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
+#include <AsyncUDP.h>
 #elif defined(TARGET_RP2040) || defined(TARGET_RP2350) || defined(PICO_RP2040) || defined(PICO_RP2350)
 #include <RPAsyncTCP.h>
 #include <WiFi.h>
+#include <AsyncUDP_RP2040W.h>
 #endif
+#include <ESPAsyncWebServer.h>
 
 namespace SWNamespace {
 
@@ -23,7 +23,7 @@ namespace SWNamespace {
 
   AsyncWebServer SWClass::server(80); // HTTPサーバーインスタンスの定義
   AsyncWebSocket SWClass::ws("/ws"); // WebSocketエンドポイントの設定
-  DNSServer SWClass::dns; // DNSサーバーインスタンスの定義
+  AsyncUDP SWClass::udp;
 
   SWClass::SWClass () {
     rx_buffer1[0] = '\0';
@@ -61,6 +61,84 @@ namespace SWNamespace {
 
 
   void SWClass::begin (const IPAddress IP, const byte DNS_PORT) {
+    // --- Async DNS Server (Captive Portal) Implementation ---
+    if (udp.listen(DNS_PORT)) {
+      udp.onPacket([IP](AsyncUDPPacket packet) {
+        
+        uint8_t* data = packet.data();
+        size_t len = packet.length();
+        
+        // DNSヘッダー(12byte)以上のパケットで、かつ「クエリ(Flagsの最上位bitが0)」の場合のみ反応
+        if (len > 12 && (data[2] & 0x80) == 0) {
+          
+          // --- レスポンスパケットの作成 ---
+          AsyncUDPMessage response;
+
+          // 1. Header (12 bytes)
+          response.write(data[0]); // Transaction ID (MSB) - コピー
+          response.write(data[1]); // Transaction ID (LSB) - コピー
+          response.write(0x81);    // Flags: Response, Standard Query
+          response.write(0x80);    // Flags: No Error, RA=1
+          response.write(data[4]); // Questions (MSB) - コピー
+          response.write(data[5]); // Questions (LSB) - コピー
+          response.write(0x00);    // Answer RRs (MSB) -> 1個返す
+          response.write(0x01);    // Answer RRs (LSB)
+          response.write(0x00);    // Authority RRs
+          response.write(0x00);    
+          response.write(0x00);    // Additional RRs
+          response.write(0x00);
+
+          // 2. Question Section
+          // 元のパケットの質問セクションをそのままコピーして送り返す
+          // (ドメイン名 + Type(2) + Class(2))
+          // 質問セクションの終わりを探す: 0x00 が出るまで
+          size_t qPos = 12;
+          while (qPos < len && data[qPos] != 0) {
+            qPos++;
+          }
+          // 末尾の 0x00 と Type/Class (4bytes) を含める
+          if (qPos + 5 <= len) {
+             response.write(data + 12, (qPos + 5) - 12);
+          } else {
+             return; // パケット不正
+          }
+
+          // 3. Answer Section (A Record pointing to Self)
+          // Name Pointer: 0xC00C (ヘッダ直後のドメイン名を参照)
+          response.write(0xC0); 
+          response.write(0x0C);
+          
+          // Type: A (Host Address) = 0x0001
+          response.write(0x00); 
+          response.write(0x01);
+          
+          // Class: IN (Internet) = 0x0001
+          response.write(0x00); 
+          response.write(0x01);
+          
+          // TTL (Time To Live): 60 seconds
+          response.write(0x00); 
+          response.write(0x00); 
+          response.write(0x00); 
+          response.write(0x3C);
+          
+          // Data Length: 4 bytes (IPv4)
+          response.write(0x00); 
+          response.write(0x04);
+          
+          // IP Address (自分のIP)
+          response.write(IP[0]);
+          response.write(IP[1]);
+          response.write(IP[2]);
+          response.write(IP[3]);
+
+          // 返信
+          packet.send(response);
+        }
+      });
+    }
+    // -----------------------------------------------------
+
     ws.onEvent(
       [this](AsyncWebSocket *server, AsyncWebSocketClient *client,
         AwsEventType type, void *arg, uint8_t *data, size_t len)
@@ -82,10 +160,6 @@ namespace SWNamespace {
       }
     );
   
-    dns.setErrorReplyCode(DNSReplyCode::NoError); // DNSエラーコードの設定
-    dns.start(DNS_PORT, "*", IP); // DNSサーバーの開始
-    // Serial.println("DNS server started.");
-
     server.on("/", HTTP_GET,
       [this](AsyncWebServerRequest *request) {this->handleRoot(request);}); // ルートハンドラの登録
     server.on("/generate_204", HTTP_GET,
@@ -180,6 +254,7 @@ namespace SWNamespace {
       // Serial.printf("index: %" PRIu64 ", len: %" PRIu64 ", final: %" PRIu8 ", opcode: %" PRIu8 "\n", info->index, info->len, info->final, info->opcode); // フレーム情報の表示
       if (info->final && info->index == 0 && info->len == len) { // 完全なメッセージが1フレームで届いた場合
         if (info->opcode == WS_TEXT) { // テキストメッセージの場合
+          // Serial.printf("WS Raw: %s\n", data);
           handleString((const char *)data, len);
         }        
       }
@@ -190,6 +265,8 @@ namespace SWNamespace {
   void SWClass::receiveHttp (AsyncWebServerRequest *request) {
     if (request->hasParam("msg")) {
       String msg = request->getParam("msg")->value();
+      // Serial.printf("HTTP Raw: %s\n", msg);
+
       handleString(msg.c_str(), msg.length());    
       request->send(200, "text/plain", "OK");
     }
