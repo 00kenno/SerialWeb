@@ -16,13 +16,13 @@
 #if defined(ESP32) || defined(LIBRETINY)
 #include <AsyncTCP.h>
 #include <WiFi.h>
-#include <AsyncUDP.h>
 #elif defined(TARGET_RP2040) || defined(TARGET_RP2350) || defined(PICO_RP2040) || defined(PICO_RP2350)
 #include <RPAsyncTCP.h>
 #include <WiFi.h>
-#include <AsyncUDP_RP2040W.h>
 #endif
 #include <ESPAsyncWebServer.h>
+
+class AsyncUDP; // 前方宣言
 
 namespace SWNamespace {
   
@@ -52,7 +52,7 @@ namespace SWNamespace {
     private:
       static AsyncWebServer server;
       static AsyncWebSocket ws;
-      static AsyncUDP udp;
+      static AsyncUDP* udp;
       
       void handleRoot(AsyncWebServerRequest *request);
       void handleWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
