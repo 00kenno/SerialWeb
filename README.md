@@ -1,6 +1,7 @@
 # SerialWeb
 キャプティブポータルをデバッグモニターとして用いるためのライブラリです．<br>
-➔ デモページは[**こちら**](https://torica-org.github.io/SerialWeb/)
+➔ デモページは[**こちら**](https://torica-org.github.io/SerialWeb/)<br>
+➔ Arduino Library Manager Registryへの登録状況は[**こちら**](https://downloads.arduino.cc/libraries/logs/github.com/TORICA-Org/SerialWeb/)
 
 ## ライブラリの導入
 Arduino IDEのライブラリマネージャから`SerialWeb`がインストール可能です．
