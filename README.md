@@ -3,11 +3,14 @@
 ➔ デモページは[**こちら**](https://torica-org.github.io/SerialWeb/)
 
 ## ライブラリの導入
-1. 上部の`Download ZIP`でZIPファイルをダウンロードしてください．
-2. ArduinoIDEの `Sketch` -> `Include Library` -> `Add .ZIP Library...` で導入できます．もしくは，ArduinoIDEのライブラリが保存されたディレクトリ（Windowsでは通常`C:\Users\{UserName}\Documents\Arduino\libraries\`です．）に直接展開してください．
+Arduino IDEのライブラリマネージャから`SerialWeb`がインストール可能です．
+1. ~~上部の`Download ZIP`でZIPファイルをダウンロードしてください．~~
+2. ~~ArduinoIDEの `Sketch` -> `Include Library` -> `Add .ZIP Library...` で導入できます．もしくは，ArduinoIDEのライブラリが保存されたディレクトリ（Windowsでは通常`C:\Users\{UserName}\Documents\Arduino\libraries\`です．）に直接展開してください．~~
 
 ## 必要なライブラリ
-以下のライブラリをライブラリマネージャからインストールしてください．
+~~以下のライブラリをライブラリマネージャからインストールしてください．~~
+
+Arduino IDE 2.x.xのライブラリマネージャで`SerialWeb`をインストールすると，自動的に依存ライブラリもインストールされます．
 > [!NOTE]
 > 名前の似たライブラリがたくさん存在します．作者の名前なども使って照合してください．
 
