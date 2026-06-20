@@ -24,13 +24,7 @@ namespace SWNamespace {
   AsyncWebSocket SWClass::ws("/ws"); // WebSocketエンドポイントの設定
   AsyncUDP* SWClass::udp = nullptr;
 
-  SWClass::SWClass () {
-    rx_buffer1[0] = '\0';
-    rx_buffer2[0] = '\0';
-    writing = rx_buffer1;
-    reading = rx_buffer2;
-    isReading = false;
-    newData = false;
+  SWClass::SWClass () : rx_head(0), rx_tail(0) {
   }
 
 
@@ -174,8 +168,6 @@ namespace SWNamespace {
     server.on("/send", HTTP_GET,
       [this](AsyncWebServerRequest *request) {this->receiveHttp(request);}); // iOSからはHTTPで受信
 
-    server.addHandler(&ws); // WebSocketハンドラの追加
-
     server.begin(); // HTTPサーバーの開始
     // Serial.println("HTTP server started.");
   }
@@ -206,20 +198,37 @@ namespace SWNamespace {
   }
 
   
-  bool SWClass::available () {
+  int SWClass::available () {
     ws.cleanupClients(maxClients); // クライアントのクリーンアップ
-    return newData;
+    lock_obj.lock();
+    int count = (rx_head - rx_tail + BUFFER_SIZE) % BUFFER_SIZE;
+    lock_obj.unlock();
+    return count;
   }
 
 
-  String SWClass::readString () {
-    isReading = true;
-    char tempBuffer[BUFFER_SIZE];
-    strcpy(tempBuffer, (char *)reading);
-    newData = false;
-    isReading = false;
-    ws.cleanupClients(maxClients); // クライアントのクリーンアップ
-    return String(tempBuffer);
+  int SWClass::read () {
+    lock_obj.lock();
+    if (rx_head == rx_tail) {
+      lock_obj.unlock();
+      return -1;
+    }
+    uint8_t c = rx_buffer[rx_tail];
+    rx_tail = (rx_tail + 1) % BUFFER_SIZE;
+    lock_obj.unlock();
+    return c;
+  }
+
+
+  int SWClass::peek () {
+    lock_obj.lock();
+    if (rx_head == rx_tail) {
+      lock_obj.unlock();
+      return -1;
+    }
+    uint8_t c = rx_buffer[rx_tail];
+    lock_obj.unlock();
+    return c;
   }
 
 
@@ -268,7 +277,7 @@ namespace SWNamespace {
   void SWClass::receiveHttp (AsyncWebServerRequest *request) {
     if (request->hasParam("msg")) {
       String msg = request->getParam("msg")->value();
-      // Serial.printf("HTTP Raw: %s\n", msg);
+      // Serial.printf("HTTP Raw: %s\n", msg.c_str());
 
       handleString(msg.c_str(), msg.length());    
       request->send(200, "text/plain", "OK");
@@ -280,16 +289,15 @@ namespace SWNamespace {
 
 
   void SWClass::handleString (const char *str, size_t len) {
-    if (isReading) return; // データ落ちの可能性
-
-    char *stash = (char *)reading;
-    size_t cplen = min(len, (size_t)(BUFFER_SIZE - 1));
-    memcpy((void *)writing, str, cplen);
-    writing[cplen] = '\0';
-
-    reading = writing;
-    writing = stash;
-    newData = true;
+    lock_obj.lock();
+    for (size_t i = 0; i < len; i++) {
+      int next = (rx_head + 1) % BUFFER_SIZE;
+      if (next != rx_tail) {
+        rx_buffer[rx_head] = (uint8_t)str[i];
+        rx_head = next;
+      }
+    }
+    lock_obj.unlock();
   }
 
 

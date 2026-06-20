@@ -332,8 +332,12 @@ constexpr char html[] = R"(
           element.style.display = '';
         })
         const logSpans = document.querySelectorAll('#logWindow > div > span > span');
-          logSpans.forEach((element) => {
-          element.style.display = '';
+        logSpans.forEach((element) => {
+          if (element.classList.contains('timestamp')) {
+            element.style.display = showTimestamps ? '' : 'none';
+          } else {
+            element.style.display = '';
+          }
         });
       }
     });

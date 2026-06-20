@@ -76,5 +76,6 @@ SerialWeb.println("world."); // -> `Hello, world.`
 SerialWeb.printf("Time: %ld", millis());
 ```
 
-- `SerialWeb.readString`など
-  - 実装が不完全です．使用することはおすすめしません．
+- `SerialWeb.readString()` など
+  - Web画面の入力フォームから送信されたテキストを読み取ることができます（`Stream` クラスのメソッドが利用可能です）。
+  - **※注意**: 取得した `String` オブジェクトを `Serial.printf()` などの `%s` フォーマット指定子に直接渡すと、メモリレイアウトの不一致により非表示やメモリ破損・クラッシュの原因になります。必ず `msg.c_str()` を渡すか、`Serial.println(msg)` を使用してください。
