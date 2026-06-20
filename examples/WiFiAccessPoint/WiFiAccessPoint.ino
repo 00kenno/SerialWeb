@@ -25,10 +25,9 @@ void loop() {
   // 読み取りは，readString関数のみの実装です．
   // available関数はbool型です．
   if (SerialWeb.available()) {
-    // メモリの上書き問題が解決できていません．
-    // 半角英数字13文字までなら正常動作します．
+    // Stringオブジェクトをprintfの%sに直接渡すとメモリ破壊や無表示の原因となるため、.c_str()を使用します。
     String msg = SerialWeb.readString();
-    Serial.printf("readString: %s\n", msg);
+    Serial.printf("readString: %s\n", msg.c_str());
   }
 
   delay(100);
