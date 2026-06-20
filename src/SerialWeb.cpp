@@ -22,7 +22,7 @@ namespace SWNamespace {
 
   AsyncWebServer SWClass::server(80); // HTTPサーバーインスタンスの定義
   AsyncWebSocket SWClass::ws("/ws"); // WebSocketエンドポイントの設定
-  AsyncUDP SWClass::udp;
+  AsyncUDP* SWClass::udp = nullptr;
 
   SWClass::SWClass () : rx_head(0), rx_tail(0) {
   }
@@ -55,8 +55,12 @@ namespace SWNamespace {
 
   void SWClass::begin (const IPAddress IP, const byte DNS_PORT) {
     // --- Async DNS Server (Captive Portal) Implementation ---
-    if (udp.listen(DNS_PORT)) {
-      udp.onPacket([IP](AsyncUDPPacket packet) {
+    if (udp == nullptr) {
+      udp = new AsyncUDP();
+    }
+
+    if (udp->listen(DNS_PORT)) {
+      udp->onPacket([IP](AsyncUDPPacket packet) {
         
         uint8_t* data = packet.data();
         size_t len = packet.length();
